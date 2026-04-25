@@ -1,8 +1,8 @@
-# zephyr-nix
+# Nix flake for zephyr-sdk
 
 A Nix flake that packages the [Zephyr SDK](https://docs.zephyrproject.org/latest/develop/toolchains/zephyr_sdk.html) and exposes it as a declarative module for **NixOS**, **home-manager**, and **nix-darwin**.
 
-> **Status:** Early development.  The SHA-256 hashes in `pkgs/zephyr-sdk/default.nix` are placeholders (`lib.fakeSha256`) and must be filled in before the package can be built.  ELF patching for NixOS is scaffolded but will require iteration against the actual SDK binaries.
+> **Status:** Early development.
 
 ---
 
@@ -18,7 +18,7 @@ A Nix flake that packages the [Zephyr SDK](https://docs.zephyrproject.org/latest
 
 ## Quickstart
 
-### 1 — NixOS (`nixosConfigurations`)
+### 1. NixOS (`nixosConfigurations`)
 
 ```nix
 # flake.nix
@@ -47,7 +47,7 @@ A Nix flake that packages the [Zephyr SDK](https://docs.zephyrproject.org/latest
 }
 ```
 
-### 2 — home-manager (standalone)
+### 2. home-manager (standalone)
 
 ```nix
 # flake.nix
@@ -87,7 +87,7 @@ home-manager.users.alice = {
 };
 ```
 
-### 3 — nix-darwin (`darwinConfigurations`)
+### 3. nix-darwin (`darwinConfigurations`)
 
 ```nix
 # flake.nix
@@ -133,30 +133,10 @@ All three modules expose the same option namespace: `programs.zephyr-sdk.*`
 | `enableShellIntegration`  | `bool`          | `true`                   | Export `ZEPHYR_SDK_INSTALL_DIR` and `ZEPHYR_TOOLCHAIN_VARIANT` |
 | `extraEnv`                | `attrs`         | `{}`                     | Additional environment variables (e.g. `ZEPHYR_BASE`) |
 
-> **Note:** `ZEPHYR_TOOLCHAIN_VARIANT` is always set to `"zephyr"` — it is a
+> **Note:** `ZEPHYR_TOOLCHAIN_VARIANT` is always set to `"zephyr"` - it is a
 > property of the SDK itself, not a user-configurable option.  The toolchain
 > *selection* (which targets to install) is handled by `gnu.targets` and
 > `llvm.enable` at Nix evaluation time.
-
----
-
-## Getting the real SHA-256 hashes
-
-```bash
-# x86_64-linux
-nix-prefetch-url \
-  https://github.com/zephyrproject-rtos/sdk-ng/releases/download/v0.16.8/zephyr-sdk-0.16.8_linux-x86_64.tar.xz
-
-# aarch64-linux
-nix-prefetch-url \
-  https://github.com/zephyrproject-rtos/sdk-ng/releases/download/v0.16.8/zephyr-sdk-0.16.8_linux-aarch64.tar.xz
-
-# aarch64-darwin
-nix-prefetch-url \
-  https://github.com/zephyrproject-rtos/sdk-ng/releases/download/v0.16.8/zephyr-sdk-0.16.8_macos-aarch64.tar.xz
-```
-
-Paste each result into the corresponding `sha256 = ...` field in `pkgs/zephyr-sdk/default.nix`.
 
 ---
 
@@ -167,7 +147,8 @@ zephyr-nix/
 ├── flake.nix                   # Flake entry point
 ├── pkgs/
 │   └── zephyr-sdk/
-│       └── default.nix         # SDK derivation (fetch + ELF patch + shebang fix)
+│       ├── default.nix         # SDK derivation
+│       └── toolchains.nix      # Helper to select GNU toolchains
 ├── modules/
 │   ├── nixos.nix               # NixOS module
 │   ├── home-manager.nix        # home-manager module
@@ -181,8 +162,6 @@ zephyr-nix/
 
 ## Roadmap
 
-- [ ] Iterate ELF patching against actual SDK binaries on NixOS
-- [ ] Support selecting individual toolchain bundles (arm, riscv, xtensa, …)
 - [ ] Expose udev rules as a standalone NixOS option
 - [ ] Add a `devShell` output with west + dependencies pre-configured
 - [ ] CI with GitHub Actions across all three supported systems
