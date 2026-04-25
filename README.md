@@ -2,7 +2,8 @@
 
 A Nix flake that packages the [Zephyr SDK](https://docs.zephyrproject.org/latest/develop/toolchains/zephyr_sdk.html) and exposes it as a declarative module for **NixOS**, **home-manager**, and **nix-darwin**.
 
-> **Status:** Early development.
+> [!IMPORTANT]
+> **Status:** Beta.
 
 ---
 
@@ -90,6 +91,11 @@ home-manager.users.alice = {
 };
 ```
 
+> [!WARNING]
+> The home-manager module cannot install udev rules because it
+> runs without root privileges.  Without these rules, flashing a board
+> requires `sudo`. See [here](#udev-rules-and-standalone-home-manager)
+
 ### 3. nix-darwin (`darwinConfigurations`)
 
 ```nix
@@ -138,29 +144,17 @@ All three modules expose the same option namespace: `programs.zephyr-sdk.*`
 | `extraEnv`                    | `attrs`           | `{}`                  | Additional environment variables (e.g. `ZEPHYR_BASE`)                          |
 | `udev.enable` *(NixOS only)*  | `bool`            | `true`                | Install udev rules for debug probes via `services.udev.packages`               |
 
-> **Note:** `ZEPHYR_TOOLCHAIN_VARIANT` is always set to `"zephyr"` - it is a
+> [!NOTE]
+> `ZEPHYR_TOOLCHAIN_VARIANT` is always set to `"zephyr"` - it is a
 > property of the SDK itself, not a user-configurable option.  The toolchain
 > *selection* (which targets to install) is handled by `toolchain.gnu.toolchains`
 > and `toolchain.llvm.enable` at Nix evaluation time.
 
 ### udev rules and standalone home-manager
 
-> **Warning:** The home-manager module cannot install udev rules because it
-> runs without root privileges.  Without these rules, flashing a board
-> requires `sudo`.
->
-> **If you use home-manager embedded inside a NixOS configuration** (via
-> `home-manager.users.<name>`), add the NixOS module alongside it and set
-> `programs.zephyr-sdk.udev.enable = true` (the default) in the NixOS config.
->
-> **If you use standalone home-manager on Linux**, use sudo or install the rules manually
-> after building the package (not recommended):
->
-> ```bash
-> sdk=$(nix build --no-link --print-out-paths .#zephyr-sdk)
-> sudo cp "$sdk"/lib/udev/rules.d/*.rules /etc/udev/rules.d/
-> sudo udevadm control --reload
-> ```
+- **If you use home-manager embedded inside a NixOS configuration** (via `home-manager.users.<name>`), add the NixOS module alongside it and set `programs.zephyr-sdk.udev.enable = true` (the default) in the NixOS config.
+ 
+- **If you use standalone home-manager on Linux**, use sudo or install the rules manually with your system configuration (not recommended). You can find the rules in sdk hosttools.
 
 ---
 
