@@ -132,7 +132,7 @@ All three modules expose the same option namespace: `programs.zephyr-sdk.*`
 | `enable`                      | `bool`            | `false`               | Install and configure the SDK                                                  |
 | `package`                     | `package\|null`   | `null` (derived)      | Supply a fully custom SDK derivation, bypassing `toolchain.*` options          |
 | `toolchain.gnu.enable`        | `bool`            | `false`               | Whether to include GNU cross-compilation toolchains                            |
-| `toolchain.gnu.toolchains`    | `[string]\|"all"` | `["arm-zephyr-eabi"]` | GNU toolchain targets to fetch and install (only when `toolchain.gnu.enable`)  |
+| `toolchain.gnu.toolchains`    | `[string]\|"all"` | `[]`                  | GNU toolchain targets to fetch and install (only when `toolchain.gnu.enable`)  |
 | `toolchain.llvm.enable`       | `bool`            | `false`               | Whether to include the LLVM toolchain bundle                                   |
 | `enableShellIntegration`      | `bool`            | `true`                | Export `ZEPHYR_SDK_INSTALL_DIR` and `ZEPHYR_TOOLCHAIN_VARIANT`                 |
 | `extraEnv`                    | `attrs`           | `{}`                  | Additional environment variables (e.g. `ZEPHYR_BASE`)                          |
@@ -186,5 +186,5 @@ zephyr-nix/
 
 ## Roadmap
 
-- [ ] Add a `devShell` output with west + dependencies pre-configured
+- [x] Add a `devShell` output with west + dependencies pre-configured
 - [ ] CI with GitHub Actions across all three supported systems

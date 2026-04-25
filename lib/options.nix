@@ -42,7 +42,7 @@ in
 
       toolchains = mkOption {
         type    = with types; either (enum [ "all" ]) (listOf (enum manifest.allKnownGnuTargets));
-        default = [ "arm-zephyr-eabi" ];
+        default = [ ];
         example = lib.literalExpression ''[ "arm-zephyr-eabi" "riscv64-zephyr-elf" ]'';
         description = ''
           GNU toolchain targets to download and install.  Each entry must be

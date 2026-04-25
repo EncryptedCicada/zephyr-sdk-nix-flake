@@ -2,17 +2,6 @@
 
 { lib
 , stdenvNoCC
-, cmake
-, ninja
-, dtc
-, gperf
-, ccache
-, gnumake
-, xz
-, file
-, dfu-util
-, udev
-, wget
 , fetchurl
 , bash
 , python3
@@ -20,7 +9,6 @@
 , autoPatchelfHook
 , ncurses
 , python312
-, glibcLocales
 , gnuToolchains ? [ ]
 , enableLlvm    ? false
 , sdkVersion    ? "1.0.1"
@@ -106,22 +94,6 @@ stdenvNoCC.mkDerivation {
     python312
   ];
 
-  propagatedBuildInputs = [
-    cmake
-    ninja
-    gperf
-    ccache
-    dtc
-    gnumake
-    which
-    xz
-    file
-    python3
-    dfu-util
-    udev
-    wget
-  ];
-
   # ------------------------------------------------------------------ #
   #  postUnpack                                                          #
   # ------------------------------------------------------------------ #
@@ -169,6 +141,8 @@ stdenvNoCC.mkDerivation {
 
     runHook postInstall
   '';
+
+  setupHook = ./setup-hook.sh;
 
   meta = with lib; {
     description = "Zephyr RTOS toolchain SDK";
