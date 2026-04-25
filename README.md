@@ -26,7 +26,7 @@ A Nix flake that packages the [Zephyr SDK](https://docs.zephyrproject.org/latest
 {
   inputs = {
     nixpkgs.url    = "github:NixOS/nixpkgs/nixos-unstable";
-    zephyr-nix.url = "github:yourorg/zephyr-nix";
+    zephyr-nix.url = "github:EncryptedCicada/zephyr-sdk-nix-flake";
   };
 
   outputs = { nixpkgs, zephyr-nix, ... }: {
@@ -57,7 +57,7 @@ A Nix flake that packages the [Zephyr SDK](https://docs.zephyrproject.org/latest
   inputs = {
     nixpkgs.url      = "github:NixOS/nixpkgs/nixos-unstable";
     home-manager.url = "github:nix-community/home-manager";
-    zephyr-nix.url   = "github:yourorg/zephyr-nix";
+    zephyr-nix.url   = "github:EncryptedCicada/zephyr-sdk-nix-flake";
   };
 
   outputs = { home-manager, zephyr-nix, nixpkgs, ... }: {
@@ -94,7 +94,7 @@ home-manager.users.alice = {
 > [!WARNING]
 > The home-manager module cannot install udev rules because it
 > runs without root privileges.  Without these rules, flashing a board
-> requires `sudo`. See [here](#udev-rules-and-standalone-home-manager)
+> requires `sudo`. See [how to work around this.](#udev-rules-and-standalone-home-manager)
 
 ### 3. nix-darwin (`darwinConfigurations`)
 
@@ -104,7 +104,7 @@ home-manager.users.alice = {
   inputs = {
     nixpkgs.url    = "github:NixOS/nixpkgs/nixos-unstable";
     darwin.url     = "github:LnL7/nix-darwin";
-    zephyr-nix.url = "github:yourorg/zephyr-nix";
+    zephyr-nix.url = "github:EncryptedCicada/zephyr-sdk-nix-flake";
   };
 
   outputs = { darwin, zephyr-nix, ... }: {
@@ -153,7 +153,7 @@ All three modules expose the same option namespace: `programs.zephyr-sdk.*`
 ### udev rules and standalone home-manager
 
 - **If you use home-manager embedded inside a NixOS configuration** (via `home-manager.users.<name>`), add the NixOS module alongside it and set `programs.zephyr-sdk.udev.enable = true` (the default) in the NixOS config.
- 
+
 - **If you use standalone home-manager on Linux**, use sudo or install the rules manually with your system configuration (not recommended). You can find the rules in sdk hosttools.
 
 ---
