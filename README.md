@@ -158,26 +158,6 @@ All three modules expose the same option namespace: `programs.zephyr-sdk.*`
 
 ---
 
-## Repository layout
-
-```sh
-zephyr-nix/
-├── flake.nix                   # Flake entry point
-├── pkgs/
-│   └── zephyr-sdk/
-│       ├── default.nix         # SDK derivation
-│       └── toolchains.nix      # Helper to select GNU toolchains
-├── modules/
-│   ├── nixos.nix               # NixOS module
-│   ├── home-manager.nix        # home-manager module
-│   └── darwin.nix              # nix-darwin module
-└── lib/
-    ├── options.nix             # Shared option declarations
-    └── implementation.nix      # Shared resolved-config logic
-```
-
----
-
 ## Roadmap
 
 - [x] Add a `devShell` output with west + dependencies pre-configured
