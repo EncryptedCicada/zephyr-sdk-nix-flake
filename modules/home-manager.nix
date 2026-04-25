@@ -2,32 +2,40 @@
 #
 # home-manager module for the Zephyr SDK.
 #
-# Usage as a standalone home-manager flake module:
+# Usage — standalone home-manager flake:
 #
 #   {
 #     inputs = {
-#       home-manager.url  = "github:nix-community/home-manager";
-#       zephyr-nix.url    = "github:yourorg/zephyr-nix";
+#       nixpkgs.url      = "github:NixOS/nixpkgs/nixos-unstable";
+#       home-manager.url = "github:nix-community/home-manager";
+#       zephyr-nix.url   = "github:yourorg/zephyr-nix";
 #     };
 #
-#     outputs = { home-manager, zephyr-nix, ... }: {
+#     outputs = { home-manager, zephyr-nix, nixpkgs, ... }: {
 #       homeConfigurations."alice" = home-manager.lib.homeManagerConfiguration {
+#         pkgs    = nixpkgs.legacyPackages.x86_64-linux;
 #         modules = [
 #           zephyr-nix.homeManagerModules.default
 #           {
-#             programs.zephyr-sdk.enable = true;
+#             programs.zephyr-sdk = {
+#               enable = true;
+#               gnu.targets = [ "arm-zephyr-eabi" ];
+#             };
 #           }
 #         ];
 #       };
 #     };
 #   }
 #
-# The module can also be composed inside a NixOS or nix-darwin config that
-# already imports home-manager as a NixOS / Darwin module:
+# Usage — embedded inside a NixOS or nix-darwin config that already uses
+# the home-manager NixOS/Darwin module:
 #
 #   home-manager.users.alice = {
 #     imports = [ zephyr-nix.homeManagerModules.default ];
-#     programs.zephyr-sdk.enable = true;
+#     programs.zephyr-sdk = {
+#       enable = true;
+#       gnu.targets = [ "arm-zephyr-eabi" "riscv64-zephyr-elf" ];
+#     };
 #   };
 
 { self }:
@@ -39,7 +47,21 @@ let
 
   optionDecls = import ../lib/options.nix { inherit lib pkgs self; };
   cfg         = config.programs.zephyr-sdk;
-  impl        = import ../lib/implementation.nix { inherit lib cfg pkgs; };
+
+  # Resolve the SDK package from the user's gnu/llvm options, unless they
+  # have supplied a fully custom package via programs.zephyr-sdk.package.
+  resolvedPackage =
+    if cfg.package != null
+    then cfg.package
+    else self.packages.${pkgs.stdenv.hostPlatform.system}.zephyr-sdk.override {
+      gnuToolchains = if cfg.gnu.enable then cfg.gnu.targets else [];
+      enableLlvm    = cfg.llvm.enable;
+    };
+
+  impl = import ../lib/implementation.nix {
+    inherit lib cfg pkgs;
+    package = resolvedPackage;
+  };
 in
 {
   # ------------------------------------------------------------------ #
@@ -49,8 +71,9 @@ in
     inherit (optionDecls)
       enable
       package
+      gnu
+      llvm
       enableShellIntegration
-      toolchainVariant
       extraEnv;
   };
 
@@ -62,12 +85,10 @@ in
     # Add the SDK to the user's profile.
     home.packages = impl.packages;
 
-    # Per-user session variables (written to ~/.profile, ~/.bash_profile,
-    # etc. depending on the shell modules that are also enabled).
+    # Per-user session variables written to ~/.profile, ~/.bash_profile, etc.
     home.sessionVariables = impl.sessionVariables;
 
-    # Source the zephyrrc in interactive shells.
-    # home-manager exposes per-shell init hooks; we use the generic one.
+    # Source zephyrrc in interactive shells.
     home.sessionVariablesExtra = impl.shellInitExtra;
   };
 }

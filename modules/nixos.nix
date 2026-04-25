@@ -5,16 +5,24 @@
 # Usage in a NixOS flake:
 #
 #   {
-#     inputs.zephyr-nix.url = "github:yourorg/zephyr-nix";
+#     inputs = {
+#       nixpkgs.url    = "github:NixOS/nixpkgs/nixos-unstable";
+#       zephyr-nix.url = "github:yourorg/zephyr-nix";
+#     };
 #
 #     outputs = { nixpkgs, zephyr-nix, ... }: {
 #       nixosConfigurations.myHost = nixpkgs.lib.nixosSystem {
+#         system  = "x86_64-linux";
 #         modules = [
 #           zephyr-nix.nixosModules.default
 #           {
-#             programs.zephyr-sdk.enable = true;
-#             # programs.zephyr-sdk.toolchainVariant = "gnuarmemb";
+#             programs.zephyr-sdk = {
+#               enable = true;
+#               gnu.targets = [ "arm-zephyr-eabi" "riscv64-zephyr-elf" ];
+#               llvm.enable = false;
+#             };
 #           }
+#           ./configuration.nix
 #         ];
 #       };
 #     };
@@ -29,7 +37,21 @@ let
 
   optionDecls = import ../lib/options.nix { inherit lib pkgs self; };
   cfg         = config.programs.zephyr-sdk;
-  impl        = import ../lib/implementation.nix { inherit lib cfg pkgs; };
+
+  # Resolve the SDK package from the user's gnu/llvm options, unless they
+  # have supplied a fully custom package via programs.zephyr-sdk.package.
+  resolvedPackage =
+    if cfg.package != null
+    then cfg.package
+    else self.packages.${pkgs.stdenv.hostPlatform.system}.zephyr-sdk.override {
+      gnuToolchains = if cfg.gnu.enable then cfg.gnu.targets else [];
+      enableLlvm    = cfg.llvm.enable;
+    };
+
+  impl = import ../lib/implementation.nix {
+    inherit lib cfg pkgs;
+    package = resolvedPackage;
+  };
 in
 {
   # ------------------------------------------------------------------ #
@@ -39,8 +61,9 @@ in
     inherit (optionDecls)
       enable
       package
+      gnu
+      llvm
       enableShellIntegration
-      toolchainVariant
       extraEnv;
   };
 
@@ -49,20 +72,17 @@ in
   # ------------------------------------------------------------------ #
   config = mkIf cfg.enable {
 
-    # Install the SDK into the system profile so it is on PATH for every user.
+    # Install the SDK into the system profile so it is on PATH for all users.
     environment.systemPackages = impl.packages;
 
     # System-wide environment variables consumed by CMake / west.
     environment.sessionVariables = impl.sessionVariables;
 
-    # Source the zephyrrc in every user's interactive shell via
-    # /etc/profile.d (bash/zsh) or the equivalent.
+    # Source zephyrrc in every user's interactive shell via /etc/profile.d.
     environment.etc."profile.d/zephyr-sdk.sh".text = impl.shellInitExtra;
 
-    # udev rules for Zephyr-supported debug probes (J-Link, OpenOCD, etc.)
-    # Only relevant on Linux; harmless to gate explicitly.
-    services.udev.packages = lib.optionals (pkgs.stdenv.isLinux) [
-      cfg.package
-    ];
+    # udev rules for Zephyr-supported debug probes (J-Link, CMSIS-DAP, etc.)
+    # The SDK ships rules under lib/udev/rules.d/ inside the versioned subdir.
+    services.udev.packages = [ resolvedPackage ];
   };
 }

@@ -34,8 +34,11 @@ A Nix flake that packages the [Zephyr SDK](https://docs.zephyrproject.org/latest
       modules = [
         zephyr-nix.nixosModules.default
         {
-          programs.zephyr-sdk.enable = true;
-          # programs.zephyr-sdk.toolchainVariant = "gnuarmemb";
+          programs.zephyr-sdk = {
+            enable = true;
+            gnu.targets = [ "arm-zephyr-eabi" "riscv64-zephyr-elf" ];
+            # llvm.enable = true;
+          };
         }
         ./configuration.nix
       ];
@@ -61,7 +64,10 @@ A Nix flake that packages the [Zephyr SDK](https://docs.zephyrproject.org/latest
       modules = [
         zephyr-nix.homeManagerModules.default
         {
-          programs.zephyr-sdk.enable = true;
+          programs.zephyr-sdk = {
+            enable = true;
+            gnu.targets = [ "arm-zephyr-eabi" ];
+          };
         }
       ];
     };
@@ -74,7 +80,10 @@ It can also be embedded in a NixOS or darwin config that uses the home-manager N
 ```nix
 home-manager.users.alice = {
   imports = [ zephyr-nix.homeManagerModules.default ];
-  programs.zephyr-sdk.enable = true;
+  programs.zephyr-sdk = {
+    enable = true;
+    gnu.targets = [ "arm-zephyr-eabi" ];
+  };
 };
 ```
 
@@ -95,7 +104,11 @@ home-manager.users.alice = {
       modules = [
         zephyr-nix.darwinModules.default
         {
-          programs.zephyr-sdk.enable = true;
+          programs.zephyr-sdk = {
+            enable = true;
+            gnu.targets = [ "arm-zephyr-eabi" ];
+            # llvm.enable = true;  # macOS users may prefer Clang
+          };
         }
         ./darwin-configuration.nix
       ];
@@ -110,13 +123,20 @@ home-manager.users.alice = {
 
 All three modules expose the same option namespace: `programs.zephyr-sdk.*`
 
-| Option                              | Type      | Default     | Description |
-|-------------------------------------|-----------|-------------|-------------|
-| `enable`                            | `bool`    | `false`     | Install and configure the SDK |
-| `package`                           | `package` | flake pkg   | Override the SDK derivation |
-| `enableShellIntegration`            | `bool`    | `true`      | Export `ZEPHYR_SDK_INSTALL_DIR` etc. |
-| `toolchainVariant`                  | `string`  | `"zephyr"`  | Value of `ZEPHYR_TOOLCHAIN_VARIANT` |
-| `extraEnv`                          | `attrs`   | `{}`        | Additional environment variables |
+| Option                    | Type            | Default                  | Description |
+|---------------------------|-----------------|--------------------------|-------------|
+| `enable`                  | `bool`          | `false`                  | Install and configure the SDK |
+| `package`                 | `package\|null` | `null` (derived)         | Supply a fully custom SDK derivation, bypassing `gnu`/`llvm` options |
+| `gnu.enable`              | `bool`          | `true`                   | Whether to include GNU toolchain(s) |
+| `gnu.targets`             | `[string]\|"all"` | `["arm-zephyr-eabi"]`  | GNU toolchain targets to fetch and install |
+| `llvm.enable`             | `bool`          | `false`                  | Whether to include the LLVM toolchain bundle |
+| `enableShellIntegration`  | `bool`          | `true`                   | Export `ZEPHYR_SDK_INSTALL_DIR` and `ZEPHYR_TOOLCHAIN_VARIANT` |
+| `extraEnv`                | `attrs`         | `{}`                     | Additional environment variables (e.g. `ZEPHYR_BASE`) |
+
+> **Note:** `ZEPHYR_TOOLCHAIN_VARIANT` is always set to `"zephyr"` — it is a
+> property of the SDK itself, not a user-configurable option.  The toolchain
+> *selection* (which targets to install) is handled by `gnu.targets` and
+> `llvm.enable` at Nix evaluation time.
 
 ---
 
