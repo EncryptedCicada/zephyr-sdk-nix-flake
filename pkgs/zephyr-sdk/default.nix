@@ -127,6 +127,7 @@ stdenvNoCC.mkDerivation {
   # ------------------------------------------------------------------ #
 
   postUnpack = ''
+    rm -f "$sourceRoot/setup.sh"
     ${lib.optionalString isLinux ''
       installer=$(ls "$sourceRoot/hosttools/zephyr-sdk-"*"-hosttools-standalone-"*".sh" 2>/dev/null | head -n1)
       if [ -z "$installer" ]; then
