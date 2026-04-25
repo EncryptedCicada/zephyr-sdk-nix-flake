@@ -18,8 +18,9 @@
 #           {
 #             programs.zephyr-sdk = {
 #               enable = true;
-#               gnu.targets = [ "arm-zephyr-eabi" "riscv64-zephyr-elf" ];
-#               llvm.enable = false;
+#               toolchain.gnu.enable     = true;
+#               toolchain.gnu.toolchains = [ "arm-zephyr-eabi" "riscv64-zephyr-elf" ];
+#               # toolchain.llvm.enable = true;
 #             };
 #           }
 #           ./configuration.nix
@@ -44,8 +45,8 @@ let
     if cfg.package != null
     then cfg.package
     else self.packages.${pkgs.stdenv.hostPlatform.system}.zephyr-sdk.override {
-      gnuToolchains = if cfg.gnu.enable then cfg.gnu.targets else [];
-      enableLlvm    = cfg.llvm.enable;
+      gnuToolchains = if cfg.toolchain.gnu.enable then cfg.toolchain.gnu.toolchains else [];
+      enableLlvm    = cfg.toolchain.llvm.enable;
     };
 
   impl = import ../lib/implementation.nix {
@@ -61,10 +62,20 @@ in
     inherit (optionDecls)
       enable
       package
-      gnu
-      llvm
+      toolchain
       enableShellIntegration
       extraEnv;
+
+    udev.enable = mkOption {
+      type        = types.bool;
+      default     = true;
+      description = ''
+        Whether to install udev rules for Zephyr debug probes (OpenOCD,
+        J-Link, CMSIS-DAP, etc.) via {option}`services.udev.packages`.
+        When enabled, board flashing works for regular users without sudo.
+        Disable if you manage udev rules through another mechanism.
+      '';
+    };
   };
 
   # ------------------------------------------------------------------ #
@@ -78,11 +89,9 @@ in
     # System-wide environment variables consumed by CMake / west.
     environment.sessionVariables = impl.sessionVariables;
 
-    # Source zephyrrc in every user's interactive shell via /etc/profile.d.
-    environment.etc."profile.d/zephyr-sdk.sh".text = impl.shellInitExtra;
-
-    # udev rules for Zephyr-supported debug probes (J-Link, CMSIS-DAP, etc.)
-    # The SDK ships rules under lib/udev/rules.d/ inside the versioned subdir.
-    services.udev.packages = [ resolvedPackage ];
+    # udev rules for Zephyr debug probes (OpenOCD, J-Link, CMSIS-DAP, …).
+    # The package installs all *.rules files it finds into $out/lib/udev/rules.d/
+    # so NixOS picks them up automatically here.
+    services.udev.packages = mkIf cfg.udev.enable [ resolvedPackage ];
   };
 }

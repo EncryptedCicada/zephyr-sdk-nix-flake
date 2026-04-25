@@ -17,7 +17,7 @@ let
   # Zephyr-bundled cross-compilers are in use — this is a property of the
   # SDK itself, not a user preference.  The user's toolchain selection
   # (which GNU targets, whether to include LLVM) is resolved at Nix
-  # evaluation time via the gnu.* / llvm.* options and baked into the
+  # evaluation time via the toolchain.* options and baked into the
   # package derivation.
   coreEnv = {
     ZEPHYR_SDK_INSTALL_DIR   = "${package}";
@@ -33,11 +33,4 @@ in
   packages = [ package ];
 
   sessionVariables = allEnv;
-
-  shellInitExtra = lib.optionalString cfg.enableShellIntegration ''
-    # ---- zephyr-sdk shell init (managed by nix) ----
-    if [ -f "${package}/share/zephyr-sdk/zephyrrc" ]; then
-      source "${package}/share/zephyr-sdk/zephyrrc"
-    fi
-  '';
 }

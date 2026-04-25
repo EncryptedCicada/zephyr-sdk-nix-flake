@@ -36,8 +36,9 @@ A Nix flake that packages the [Zephyr SDK](https://docs.zephyrproject.org/latest
         {
           programs.zephyr-sdk = {
             enable = true;
-            gnu.targets = [ "arm-zephyr-eabi" "riscv64-zephyr-elf" ];
-            # llvm.enable = true;
+            toolchain.gnu.enable     = true;
+            toolchain.gnu.toolchains = [ "arm-zephyr-eabi" "riscv64-zephyr-elf" ];
+            # toolchain.llvm.enable = true;
           };
         }
         ./configuration.nix
@@ -66,7 +67,8 @@ A Nix flake that packages the [Zephyr SDK](https://docs.zephyrproject.org/latest
         {
           programs.zephyr-sdk = {
             enable = true;
-            gnu.targets = [ "arm-zephyr-eabi" ];
+            toolchain.gnu.enable     = true;
+            toolchain.gnu.toolchains = [ "arm-zephyr-eabi" ];
           };
         }
       ];
@@ -82,7 +84,8 @@ home-manager.users.alice = {
   imports = [ zephyr-nix.homeManagerModules.default ];
   programs.zephyr-sdk = {
     enable = true;
-    gnu.targets = [ "arm-zephyr-eabi" ];
+    toolchain.gnu.enable     = true;
+    toolchain.gnu.toolchains = [ "arm-zephyr-eabi" ];
   };
 };
 ```
@@ -106,8 +109,9 @@ home-manager.users.alice = {
         {
           programs.zephyr-sdk = {
             enable = true;
-            gnu.targets = [ "arm-zephyr-eabi" ];
-            # llvm.enable = true;  # macOS users may prefer Clang
+            toolchain.gnu.enable     = true;
+            toolchain.gnu.toolchains = [ "arm-zephyr-eabi" ];
+            # toolchain.llvm.enable = true;  # macOS users may prefer Clang
           };
         }
         ./darwin-configuration.nix
@@ -123,20 +127,40 @@ home-manager.users.alice = {
 
 All three modules expose the same option namespace: `programs.zephyr-sdk.*`
 
-| Option                   | Type              | Default               | Description                                                          |
-|--------------------------|-------------------|-----------------------|----------------------------------------------------------------------|
-| `enable`                 | `bool`            | `false`               | Install and configure the SDK                                        |
-| `package`                | `package\|null`   | `null` (derived)      | Supply a fully custom SDK derivation, bypassing `gnu`/`llvm` options |
-| `gnu.enable`             | `bool`            | `true`                | Whether to include GNU toolchain(s)                                  |
-| `gnu.targets`            | `[string]\|"all"` | `["arm-zephyr-eabi"]` | GNU toolchain targets to fetch and install                           |
-| `llvm.enable`            | `bool`            | `false`               | Whether to include the LLVM toolchain bundle                         |
-| `enableShellIntegration` | `bool`            | `true`                | Export `ZEPHYR_SDK_INSTALL_DIR` and `ZEPHYR_TOOLCHAIN_VARIANT`       |
-| `extraEnv`               | `attrs`           | `{}`                  | Additional environment variables (e.g. `ZEPHYR_BASE`)                |
+| Option                        | Type              | Default               | Description                                                                    |
+|-------------------------------|-------------------|-----------------------|--------------------------------------------------------------------------------|
+| `enable`                      | `bool`            | `false`               | Install and configure the SDK                                                  |
+| `package`                     | `package\|null`   | `null` (derived)      | Supply a fully custom SDK derivation, bypassing `toolchain.*` options          |
+| `toolchain.gnu.enable`        | `bool`            | `false`               | Whether to include GNU cross-compilation toolchains                            |
+| `toolchain.gnu.toolchains`    | `[string]\|"all"` | `["arm-zephyr-eabi"]` | GNU toolchain targets to fetch and install (only when `toolchain.gnu.enable`)  |
+| `toolchain.llvm.enable`       | `bool`            | `false`               | Whether to include the LLVM toolchain bundle                                   |
+| `enableShellIntegration`      | `bool`            | `true`                | Export `ZEPHYR_SDK_INSTALL_DIR` and `ZEPHYR_TOOLCHAIN_VARIANT`                 |
+| `extraEnv`                    | `attrs`           | `{}`                  | Additional environment variables (e.g. `ZEPHYR_BASE`)                          |
+| `udev.enable` *(NixOS only)*  | `bool`            | `true`                | Install udev rules for debug probes via `services.udev.packages`               |
 
 > **Note:** `ZEPHYR_TOOLCHAIN_VARIANT` is always set to `"zephyr"` - it is a
 > property of the SDK itself, not a user-configurable option.  The toolchain
-> *selection* (which targets to install) is handled by `gnu.targets` and
-> `llvm.enable` at Nix evaluation time.
+> *selection* (which targets to install) is handled by `toolchain.gnu.toolchains`
+> and `toolchain.llvm.enable` at Nix evaluation time.
+
+### udev rules and standalone home-manager
+
+> **Warning:** The home-manager module cannot install udev rules because it
+> runs without root privileges.  Without these rules, flashing a board
+> requires `sudo`.
+>
+> **If you use home-manager embedded inside a NixOS configuration** (via
+> `home-manager.users.<name>`), add the NixOS module alongside it and set
+> `programs.zephyr-sdk.udev.enable = true` (the default) in the NixOS config.
+>
+> **If you use standalone home-manager on Linux**, use sudo or install the rules manually
+> after building the package (not recommended):
+>
+> ```bash
+> sdk=$(nix build --no-link --print-out-paths .#zephyr-sdk)
+> sudo cp "$sdk"/lib/udev/rules.d/*.rules /etc/udev/rules.d/
+> sudo udevadm control --reload
+> ```
 
 ---
 
@@ -162,6 +186,5 @@ zephyr-nix/
 
 ## Roadmap
 
-- [ ] Expose udev rules as a standalone NixOS option
 - [ ] Add a `devShell` output with west + dependencies pre-configured
 - [ ] CI with GitHub Actions across all three supported systems

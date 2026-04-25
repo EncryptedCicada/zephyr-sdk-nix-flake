@@ -20,51 +20,53 @@ in
   package = mkOption {
     type        = with types; nullOr package;
     default     = null;
-    defaultText = lib.literalExpression "derived from programs.zephyr-sdk.gnu and .llvm options";
+    defaultText = lib.literalExpression "derived from programs.zephyr-sdk.toolchain.gnu and .llvm options";
     description = ''
       Override the Zephyr SDK package.  When set to a non-null value the
-      {option}`gnu` and {option}`llvm` sub-options are ignored and this
+      {option}`toolchain.gnu` and {option}`toolchain.llvm` sub-options are ignored and this
       package is used as-is.  Leave as `null` (the default) to let the
       module build the package from your toolchain selections.
     '';
   };
 
-  gnu = {
-    enable = mkOption {
-      type        = types.bool;
-      default     = true;
-      description = ''
-        Whether to include GNU cross-compilation toolchains in the SDK.
-        When disabled no GNU toolchain tarballs are fetched or installed.
-      '';
+  toolchain = {
+    gnu = {
+      enable = mkOption {
+        type        = types.bool;
+        default     = false;
+        description = ''
+          Whether to include GNU cross-compilation toolchains in the SDK.
+          When disabled no GNU toolchain tarballs are fetched or installed.
+        '';
+      };
+
+      toolchains = mkOption {
+        type    = with types; either (enum [ "all" ]) (listOf (enum manifest.allKnownGnuTargets));
+        default = [ "arm-zephyr-eabi" ];
+        example = lib.literalExpression ''[ "arm-zephyr-eabi" "riscv64-zephyr-elf" ]'';
+        description = ''
+          GNU toolchain targets to download and install.  Each entry must be
+          one of the following strings (or use `"all"` to install every
+          available target):
+
+          ${lib.concatMapStrings (t: "  - `${t}`\n") manifest.allKnownGnuTargets}
+
+          Only targets listed here will be fetched; the build is reproducible
+          because each tarball is a fixed-output derivation with a known hash.
+        '';
+      };
     };
 
-    targets = mkOption {
-      type    = with types; either (enum [ "all" ]) (listOf (enum manifest.allKnownGnuTargets));
-      default = [ "arm-zephyr-eabi" ];
-      example = lib.literalExpression ''[ "arm-zephyr-eabi" "riscv64-zephyr-elf" ]'';
-      description = ''
-        GNU toolchain targets to download and install.  Each entry must be
-        one of the following strings (or use `"all"` to install every
-        available target):
-
-        ${lib.concatMapStrings (t: "  - `${t}`\n") manifest.allKnownGnuTargets}
-
-        Only targets listed here will be fetched; the build is reproducible
-        because each tarball is a fixed-output derivation with a known hash.
-      '';
-    };
-  };
-
-  llvm = {
-    enable = mkOption {
-      type    = types.bool;
-      default = false;
-      description = ''
-        Whether to include the LLVM / Clang toolchain bundle in the SDK.
-        The LLVM bundle is downloaded as a single additional tarball and
-        extracted alongside the GNU toolchains.
-      '';
+    llvm = {
+      enable = mkOption {
+        type    = types.bool;
+        default = false;
+        description = ''
+          Whether to include the LLVM / Clang toolchain bundle in the SDK.
+          The LLVM bundle is downloaded as a single additional tarball and
+          extracted alongside the GNU toolchains.
+        '';
+      };
     };
   };
 

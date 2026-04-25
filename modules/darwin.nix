@@ -19,8 +19,9 @@
 #           {
 #             programs.zephyr-sdk = {
 #               enable = true;
-#               gnu.targets = [ "arm-zephyr-eabi" ];
-#               # llvm.enable = true;  # macOS users may prefer Clang
+#               toolchain.gnu.enable     = true;
+#               toolchain.gnu.toolchains = [ "arm-zephyr-eabi" ];
+#               # toolchain.llvm.enable = true;  # macOS users may prefer Clang
 #             };
 #           }
 #           ./darwin-configuration.nix
@@ -45,8 +46,8 @@ let
     if cfg.package != null
     then cfg.package
     else self.packages.${pkgs.stdenv.hostPlatform.system}.zephyr-sdk.override {
-      gnuToolchains = if cfg.gnu.enable then cfg.gnu.targets else [];
-      enableLlvm    = cfg.llvm.enable;
+      gnuToolchains = if cfg.toolchain.gnu.enable then cfg.toolchain.gnu.toolchains else [];
+      enableLlvm    = cfg.toolchain.llvm.enable;
     };
 
   impl = import ../lib/implementation.nix {
@@ -62,8 +63,7 @@ in
     inherit (optionDecls)
       enable
       package
-      gnu
-      llvm
+      toolchain
       enableShellIntegration
       extraEnv;
   };
@@ -78,11 +78,5 @@ in
 
     # nix-darwin exposes system-wide environment variables via this option.
     environment.variables = impl.sessionVariables;
-
-    # Source zephyrrc in interactive zsh and bash sessions.
-    # macOS ships zsh as the default shell since Catalina, but many
-    # developers also run bash, so we patch both.
-    programs.zsh.shellInit  = lib.mkAfter impl.shellInitExtra;
-    programs.bash.shellInit = lib.mkAfter impl.shellInitExtra;
   };
 }

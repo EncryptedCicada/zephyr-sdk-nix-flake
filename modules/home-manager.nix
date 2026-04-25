@@ -19,7 +19,8 @@
 #           {
 #             programs.zephyr-sdk = {
 #               enable = true;
-#               gnu.targets = [ "arm-zephyr-eabi" ];
+#               toolchain.gnu.enable     = true;
+#               toolchain.gnu.toolchains = [ "arm-zephyr-eabi" ];
 #             };
 #           }
 #         ];
@@ -34,7 +35,8 @@
 #     imports = [ zephyr-nix.homeManagerModules.default ];
 #     programs.zephyr-sdk = {
 #       enable = true;
-#       gnu.targets = [ "arm-zephyr-eabi" "riscv64-zephyr-elf" ];
+#       toolchain.gnu.enable     = true;
+#       toolchain.gnu.toolchains = [ "arm-zephyr-eabi" "riscv64-zephyr-elf" ];
 #     };
 #   };
 
@@ -54,8 +56,8 @@ let
     if cfg.package != null
     then cfg.package
     else self.packages.${pkgs.stdenv.hostPlatform.system}.zephyr-sdk.override {
-      gnuToolchains = if cfg.gnu.enable then cfg.gnu.targets else [];
-      enableLlvm    = cfg.llvm.enable;
+      gnuToolchains = if cfg.toolchain.gnu.enable then cfg.toolchain.gnu.toolchains else [];
+      enableLlvm    = cfg.toolchain.llvm.enable;
     };
 
   impl = import ../lib/implementation.nix {
@@ -71,8 +73,7 @@ in
     inherit (optionDecls)
       enable
       package
-      gnu
-      llvm
+      toolchain
       enableShellIntegration
       extraEnv;
   };
@@ -87,8 +88,5 @@ in
 
     # Per-user session variables written to ~/.profile, ~/.bash_profile, etc.
     home.sessionVariables = impl.sessionVariables;
-
-    # Source zephyrrc in interactive shells.
-    home.sessionVariablesExtra = impl.shellInitExtra;
   };
 }
