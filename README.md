@@ -127,6 +127,66 @@ home-manager.users.alice = {
 }
 ```
 
+### 4. Dev shell
+
+The flake exposes a `devShells.default` containing west, CMake, Ninja, DTC, clangd, GDB, and all other host-side Zephyr dependencies. `ZEPHYR_SDK_INSTALL_DIR` and `ZEPHYR_TOOLCHAIN_VARIANT` are set automatically via the SDK's setup hook when you enter the shell.
+
+Declare it in your project's `flake.nix`:
+
+```nix
+# flake.nix
+{
+  inputs = {
+    nixpkgs.url    = "github:NixOS/nixpkgs/nixos-unstable";
+    zephyr-nix.url = "github:EncryptedCicada/zephyr-sdk-nix-flake";
+  };
+
+  outputs = { self, nixpkgs, zephyr-nix, ... }:
+    let
+      zephyr-systems = [
+        "x86_64-linux"
+        "aarch64-linux"
+        "aarch64-darwin"
+      ];
+    in
+    {
+      devShells = builtins.listToAttrs (
+        map (system: {
+          name  = system;
+          value = {
+            zephyr = zephyr-nix.devShells.${system}.default;
+          };
+        }) zephyr-systems
+      );
+    };
+}
+```
+
+Then enter with:
+
+```bash
+nix develop .#zephyr
+```
+
+To use a specific set of toolchains instead of the default empty SDK, import the shell directly and pass an overridden package:
+
+```nix
+devShells = builtins.listToAttrs (
+  map (system: {
+    name  = system;
+    value = {
+      zephyr = import "${zephyr-nix}/shells/zephyr.nix" {
+        pkgs      = nixpkgs.legacyPackages.${system};
+        zephyrSdk = zephyr-nix.packages.${system}.zephyr-sdk.override {
+          gnuToolchains = [ "arm-zephyr-eabi" "riscv64-zephyr-elf" ];
+          enableLlvm    = false;
+        };
+      };
+    };
+  }) zephyr-systems
+);
+```
+
 ---
 
 ## Module options
