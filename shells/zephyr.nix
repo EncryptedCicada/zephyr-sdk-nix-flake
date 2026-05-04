@@ -74,7 +74,6 @@ pkgs.mkShell {
         natsort
         cbor
         python-can
-        spdx-tools
         opencv-python
         numpy
         python-dateutil
