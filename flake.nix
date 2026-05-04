@@ -22,7 +22,6 @@
     {
       packages = forAllSystems (system: {
         zephyr-sdk     = pkgsFor.${system}.callPackage ./pkgs/zephyr-sdk { };
-        zephyr-sdk-all = self.packages.${system}.zephyr-sdk.override { gnuToolchains = "all"; };
         default        = self.packages.${system}.zephyr-sdk;
       });
 
