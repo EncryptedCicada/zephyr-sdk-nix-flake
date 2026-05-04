@@ -41,5 +41,6 @@ pkgs.mkShell {
       "nrfutil-trace"
       "nrfutil-ble-sniffer"
     ])
+    nrf-udev
   ];
 }
