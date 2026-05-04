@@ -37,6 +37,7 @@ pkgs.mkShell {
     (python3.withPackages (ps: with ps; [
       west
       pyelftools
+      jsonschema
     ]))
     zephyrSdk
 
