@@ -5,7 +5,8 @@
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
   };
 
-  outputs = { self, nixpkgs, ... }:
+  outputs =
+    { self, nixpkgs, ... }:
     let
       supportedSystems = [
         "x86_64-linux"
@@ -15,14 +16,12 @@
 
       forAllSystems = nixpkgs.lib.genAttrs supportedSystems;
 
-      pkgsFor = forAllSystems (system:
-        import nixpkgs { inherit system; }
-      );
+      pkgsFor = forAllSystems (system: import nixpkgs { inherit system; });
     in
     {
       packages = forAllSystems (system: {
-        zephyr-sdk     = pkgsFor.${system}.callPackage ./pkgs/zephyr-sdk { };
-        default        = self.packages.${system}.zephyr-sdk;
+        zephyr-sdk = pkgsFor.${system}.callPackage ./pkgs/zephyr-sdk { };
+        default = self.packages.${system}.zephyr-sdk;
       });
 
       devShells = forAllSystems (system: {

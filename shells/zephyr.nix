@@ -21,16 +21,21 @@ pkgs.mkShell {
     dfu-util
 
     # Zephyr tooling (using the system python for consistency)
-    (python3.withPackages (ps: with ps; [
-      west
-      pyelftools
-      jsonschema
-    ]))
+    (python3.withPackages (
+      ps: with ps; [
+        west
+        pyelftools
+        jsonschema
+      ]
+    ))
 
     # The cross-compilers
     zephyrSdk
 
     # ESP
     esptool
+
+    # Nordic
+    nrfutil
   ];
 }

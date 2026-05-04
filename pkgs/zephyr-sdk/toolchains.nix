@@ -39,13 +39,12 @@
 
 rec {
   hostStrings = {
-    "x86_64-linux"   = "linux-x86_64";
-    "aarch64-linux"  = "linux-aarch64";
+    "x86_64-linux" = "linux-x86_64";
+    "aarch64-linux" = "linux-aarch64";
     "aarch64-darwin" = "macos-aarch64";
   };
 
-  parseGnuToolchainsFile = content:
-    lib.filter (l: l != "") (lib.splitString "\n" (lib.trim content));
+  parseGnuToolchainsFile = content: lib.filter (l: l != "") (lib.splitString "\n" (lib.trim content));
 
   # ------------------------------------------------------------------ #
   #  Per-version metadata                                                #
@@ -99,13 +98,11 @@ rec {
     };
   };
 
-  gnuTargetsForVersion = version:
-    parseGnuToolchainsFile versions.${version}.gnuToolchainsFile;
+  gnuTargetsForVersion = version: parseGnuToolchainsFile versions.${version}.gnuToolchainsFile;
 
-  allKnownGnuTargets =
-    lib.unique (lib.concatMap
-      (v: parseGnuToolchainsFile v.gnuToolchainsFile)
-      (lib.attrValues versions));
+  allKnownGnuTargets = lib.unique (
+    lib.concatMap (v: parseGnuToolchainsFile v.gnuToolchainsFile) (lib.attrValues versions)
+  );
 
   # ------------------------------------------------------------------ #
   #  sha256.sum parser                                                   #
@@ -116,13 +113,16 @@ rec {
   # sha256.sum line format:  <64-hex-chars>  <filename>
   # (two spaces between hash and filename, as produced by sha256sum(1))
 
-  parseHashFile = content:
+  parseHashFile =
+    content:
     let
-      lines     = lib.filter (l: l != "") (lib.splitString "\n" content);
-      parseLine = line:
-        let m = builtins.match "([0-9a-f]{64})  (.+)" line;
-        in if m == null then null
-           else lib.nameValuePair (lib.elemAt m 1) (lib.elemAt m 0);
+      lines = lib.filter (l: l != "") (lib.splitString "\n" content);
+      parseLine =
+        line:
+        let
+          m = builtins.match "([0-9a-f]{64})  (.+)" line;
+        in
+        if m == null then null else lib.nameValuePair (lib.elemAt m 1) (lib.elemAt m 0);
     in
     lib.listToAttrs (lib.filter (x: x != null) (map parseLine lines));
 
@@ -130,11 +130,18 @@ rec {
   #  URL constructors                                                    #
   # ------------------------------------------------------------------ #
 
-  releaseBaseUrl = version:
-    "https://github.com/zephyrproject-rtos/sdk-ng/releases/download/v${version}";
+  releaseBaseUrl =
+    version: "https://github.com/zephyrproject-rtos/sdk-ng/releases/download/v${version}";
 
   sha256sumUrl = version: "${releaseBaseUrl version}/sha256.sum";
-  bundleUrl    = { version, hostStr }: "${releaseBaseUrl version}/zephyr-sdk-${version}_${hostStr}_minimal.tar.xz";
-  gnuUrl       = { version, hostStr, target }: "${releaseBaseUrl version}/toolchain_gnu_${hostStr}_${target}.tar.xz";
-  llvmUrl      = { version, hostStr }: "${releaseBaseUrl version}/toolchain_llvm_${hostStr}.tar.xz";
+  bundleUrl =
+    { version, hostStr }: "${releaseBaseUrl version}/zephyr-sdk-${version}_${hostStr}_minimal.tar.xz";
+  gnuUrl =
+    {
+      version,
+      hostStr,
+      target,
+    }:
+    "${releaseBaseUrl version}/toolchain_gnu_${hostStr}_${target}.tar.xz";
+  llvmUrl = { version, hostStr }: "${releaseBaseUrl version}/toolchain_llvm_${hostStr}.tar.xz";
 }
