@@ -37,13 +37,6 @@
         default    = self.packages.${system}.zephyr-sdk;
       });
 
-      devShells = forAllSystems (system: {
-        default = import ./shells/zephyr.nix {
-          pkgs      = pkgsFor.${system};
-          zephyrSdk = self.packages.${system}.zephyr-sdk;
-        };
-      });
-
       nixosModules = {
         zephyr-sdk = import ./modules/nixos.nix { inherit self; };
         default    = self.nixosModules.zephyr-sdk;

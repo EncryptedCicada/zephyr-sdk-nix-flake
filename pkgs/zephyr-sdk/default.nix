@@ -8,12 +8,17 @@
 , which
 , autoPatchelfHook
 , ncurses
+, cmake
+, dtc
+, ninja
+, gperf
+, ccache
+, dfu-util
 , python312
 , gnuToolchains ? [ ]
 , enableLlvm    ? false
 , sdkVersion    ? "1.0.1"
 }:
-
 let
   system  = stdenvNoCC.hostPlatform.system;
   isLinux = stdenvNoCC.hostPlatform.isLinux;
@@ -92,6 +97,22 @@ stdenvNoCC.mkDerivation {
   buildInputs = lib.optionals isLinux [
     ncurses
     python312
+  ];
+
+  # These dependencies are required on the host system to use the SDK.
+  # Including them here allows the SDK to be used without a separate devShell.
+  propagatedBuildInputs = [
+    python3
+    (python3.withPackages (ps: with ps; [
+      west
+      jsonschema
+    ]))
+    cmake
+    ninja
+    dtc
+    gperf
+    ccache
+    dfu-util
   ];
 
   # ------------------------------------------------------------------ #
