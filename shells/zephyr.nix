@@ -42,5 +42,6 @@ pkgs.mkShell {
       "nrfutil-ble-sniffer"
     ])
     nrf-udev
+    segger-jlink
   ];
 }
