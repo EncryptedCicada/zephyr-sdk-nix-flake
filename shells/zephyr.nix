@@ -53,7 +53,6 @@ pkgs.mkShell {
         plotly
         junit2html
         lpc-checksum
-        spsdk
         pillow
         pygithub
         graphviz
@@ -74,6 +73,7 @@ pkgs.mkShell {
         natsort
         cbor
         python-can
+        spdx-tools
         opencv-python
         numpy
         python-dateutil
