@@ -16,11 +16,17 @@
 
       forAllSystems = nixpkgs.lib.genAttrs supportedSystems;
 
-      pkgsFor = forAllSystems (system: import nixpkgs { inherit system; });
+      pkgsFor = forAllSystems (
+        system:
+        import nixpkgs {
+          inherit system;
+          config = {
+            allowUnfree = true;
+          };
+        }
+      );
     in
     {
-      nixpkgs.config.allowUnfree = true;
-
       packages = forAllSystems (system: {
         zephyr-sdk = pkgsFor.${system}.callPackage ./pkgs/zephyr-sdk { };
         default = self.packages.${system}.zephyr-sdk;
