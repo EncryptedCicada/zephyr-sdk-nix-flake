@@ -127,11 +127,46 @@ home-manager.users.alice = {
 }
 ```
 
-### 4. Self-contained environment
+### 4. Dev shell
 
-The SDK package includes all necessary host-side dependencies: `west`, `cmake`, `ninja`, `dtc`, `gperf`, `ccache`, and `dfu-util`. When you enable the module, these tools are added to your PATH automatically.
+The flake exposes a `devShells.default` containing west, CMake, Ninja, DTC, and other host-side Zephyr dependencies. `ZEPHYR_SDK_INSTALL_DIR` and `ZEPHYR_TOOLCHAIN_VARIANT` are set automatically via the SDK's setup hook when you enter the shell.
 
-`ZEPHYR_SDK_INSTALL_DIR` and `ZEPHYR_TOOLCHAIN_VARIANT` are also set automatically via the SDK's setup hook.
+Declare it in your project's `flake.nix`:
+
+```nix
+# flake.nix
+{
+  inputs = {
+    nixpkgs.url    = "github:NixOS/nixpkgs/nixos-unstable";
+    zephyr-nix.url = "github:EncryptedCicada/zephyr-sdk-nix-flake";
+  };
+
+  outputs = { self, nixpkgs, zephyr-nix, ... }:
+    let
+      zephyr-systems = [
+        "x86_64-linux"
+        "aarch64-linux"
+        "aarch64-darwin"
+      ];
+    in
+    {
+      devShells = builtins.listToAttrs (
+        map (system: {
+          name  = system;
+          value = {
+            zephyr = zephyr-nix.devShells.${system}.default;
+          };
+        }) zephyr-systems
+      );
+    };
+}
+```
+
+Then enter with:
+
+```bash
+nix develop .#zephyr
+```
 
 ---
 
