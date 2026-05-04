@@ -29,5 +29,8 @@ pkgs.mkShell {
 
     # The cross-compilers
     zephyrSdk
+
+    # ESP
+    esptool
   ];
 }
