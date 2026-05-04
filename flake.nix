@@ -29,6 +29,7 @@
                 "nrfutil-device"
                 "nrfutil-trace"
                 "nrfutil-ble-sniffer"
+                "nrf-udev"
               ];
             segger-jlink.acceptLicense = true;
           };
