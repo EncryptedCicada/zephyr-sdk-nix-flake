@@ -1,86 +1,97 @@
 # pkgs/zephyr-sdk/default.nix
 
-{ lib
-, stdenvNoCC
-, fetchurl
-, bash
-, python3
-, which
-, autoPatchelfHook
-, ncurses
-, cmake
-, dtc
-, ninja
-, gperf
-, ccache
-, dfu-util
-, python312
-, gnuToolchains ? [ ]
-, enableLlvm    ? false
-, sdkVersion    ? "1.0.1"
+{
+  lib,
+  stdenvNoCC,
+  fetchurl,
+  bash,
+  python3,
+  which,
+  autoPatchelfHook,
+  ncurses,
+  python312,
+  gnuToolchains ? [ ],
+  enableLlvm ? false,
+  sdkVersion ? "1.0.1",
 }:
 let
-  system  = stdenvNoCC.hostPlatform.system;
+  system = stdenvNoCC.hostPlatform.system;
   isLinux = stdenvNoCC.hostPlatform.isLinux;
 
   manifest = import ./toolchains.nix { inherit lib; };
-  hostStr  = manifest.hostStrings.${system}
-    or (throw "zephyr-sdk: unsupported system '${system}'");
+  hostStr = manifest.hostStrings.${system} or (throw "zephyr-sdk: unsupported system '${system}'");
 
-  versionMeta = manifest.versions.${sdkVersion}
-    or (throw "zephyr-sdk: unknown version '${sdkVersion}'. Add it to pkgs/zephyr-sdk/toolchains.nix.");
+  versionMeta =
+    manifest.versions.${sdkVersion}
+      or (throw "zephyr-sdk: unknown version '${sdkVersion}'. Add it to pkgs/zephyr-sdk/toolchains.nix.");
 
   versionGnuTargets = manifest.gnuTargetsForVersion sdkVersion;
 
   resolvedGnuTargets =
-    if gnuToolchains == "all"
-    then versionGnuTargets
+    if gnuToolchains == "all" then
+      versionGnuTargets
     else
-      map (t:
-        if lib.elem t versionGnuTargets then t
-        else throw "zephyr-sdk: unknown GNU toolchain target '${t}' for v${sdkVersion}. Valid targets: ${lib.concatStringsSep ", " versionGnuTargets}"
+      map (
+        t:
+        if lib.elem t versionGnuTargets then
+          t
+        else
+          throw "zephyr-sdk: unknown GNU toolchain target '${t}' for v${sdkVersion}. Valid targets: ${lib.concatStringsSep ", " versionGnuTargets}"
       ) gnuToolchains;
 
   sha256sumDrv = fetchurl {
-    url  = manifest.sha256sumUrl sdkVersion;
+    url = manifest.sha256sumUrl sdkVersion;
     hash = versionMeta.sha256sumHash;
   };
 
   hashTable = manifest.parseHashFile (builtins.readFile sha256sumDrv);
 
-  getHash = filename:
+  getHash =
+    filename:
     hashTable.${filename}
       or (throw "zephyr-sdk: '${filename}' not found in sha256.sum for v${sdkVersion}");
 
   bundleTarball = fetchurl {
-    url    = manifest.bundleUrl { version = sdkVersion; inherit hostStr; };
+    url = manifest.bundleUrl {
+      version = sdkVersion;
+      inherit hostStr;
+    };
     sha256 = getHash "zephyr-sdk-${sdkVersion}_${hostStr}_minimal.tar.xz";
   };
 
-  gnuToolchainTarballs = lib.genAttrs resolvedGnuTargets (target:
-    let filename = "toolchain_gnu_${hostStr}_${target}.tar.xz";
-    in fetchurl {
-      url    = manifest.gnuUrl { version = sdkVersion; inherit hostStr target; };
+  gnuToolchainTarballs = lib.genAttrs resolvedGnuTargets (
+    target:
+    let
+      filename = "toolchain_gnu_${hostStr}_${target}.tar.xz";
+    in
+    fetchurl {
+      url = manifest.gnuUrl {
+        version = sdkVersion;
+        inherit hostStr target;
+      };
       sha256 = getHash filename;
     }
   );
 
   llvmTarball = fetchurl {
-    url    = manifest.llvmUrl { version = sdkVersion; inherit hostStr; };
+    url = manifest.llvmUrl {
+      version = sdkVersion;
+      inherit hostStr;
+    };
     sha256 = getHash "toolchain_llvm_${hostStr}.tar.xz";
   };
 
 in
 stdenvNoCC.mkDerivation {
-  pname   = "zephyr-sdk";
+  pname = "zephyr-sdk";
   version = sdkVersion;
 
   src = bundleTarball;
 
   dontConfigure = true;
-  dontBuild     = true;
-  dontStrip     = true;
-  dontPatchELF  = true;
+  dontBuild = true;
+  dontStrip = true;
+  dontPatchELF = true;
 
   # ------------------------------------------------------------------ #
   #  Build inputs                                                        #
@@ -90,7 +101,8 @@ stdenvNoCC.mkDerivation {
     bash
     python3
     which
-  ] ++ lib.optionals isLinux [
+  ]
+  ++ lib.optionals isLinux [
     autoPatchelfHook
   ];
 
@@ -151,9 +163,13 @@ stdenvNoCC.mkDerivation {
 
   meta = with lib; {
     description = "Zephyr RTOS toolchain SDK";
-    homepage    = "https://docs.zephyrproject.org/latest/develop/toolchains/zephyr_sdk.html";
-    license     = licenses.asl20;
-    platforms   = [ "x86_64-linux" "aarch64-linux" "aarch64-darwin" ];
+    homepage = "https://docs.zephyrproject.org/latest/develop/toolchains/zephyr_sdk.html";
+    license = licenses.asl20;
+    platforms = [
+      "x86_64-linux"
+      "aarch64-linux"
+      "aarch64-darwin"
+    ];
     maintainers = [ ];
   };
 }
