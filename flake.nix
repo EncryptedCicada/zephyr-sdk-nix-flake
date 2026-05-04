@@ -32,6 +32,9 @@
                 "nrf-udev"
               ];
             segger-jlink.acceptLicense = true;
+            permittedInsecurePackages = [
+              "segger-jlink-qt4-874"
+            ];
           };
         }
       );
