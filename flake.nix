@@ -11,7 +11,6 @@
       supportedSystems = [
         "x86_64-linux"
         "aarch64-linux"
-        "aarch64-darwin"
       ];
 
       forAllSystems = nixpkgs.lib.genAttrs supportedSystems;
@@ -21,7 +20,16 @@
         import nixpkgs {
           inherit system;
           config = {
-            allowUnfree = true;
+            allowUnfreePredicate =
+              pkg:
+              builtins.elem (nixpkgs.lib.getName pkg) [
+                "segger-jlink"
+                "nrfutil"
+                "nrfutil-completion"
+                "nrfutil-device"
+                "nrfutil-trace"
+                "nrfutil-ble-sniffer"
+              ];
             segger-jlink.acceptLicense = true;
           };
         }

@@ -36,6 +36,10 @@ pkgs.mkShell {
     esptool
 
     # Nordic
-    nrfutil
+    (nrfutil.withExtensions [
+      "nrfutil-device"
+      "nrfutil-trace"
+      "nrfutil-ble-sniffer"
+    ])
   ];
 }
