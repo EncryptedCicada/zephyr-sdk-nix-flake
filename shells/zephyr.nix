@@ -24,7 +24,7 @@ pkgs.mkShell {
     gitlint
 
     # Zephyr tooling (using the system python for consistency)
-    (python3.withPackages (
+    (python312.withPackages (
       ps: with ps; [
         west
         pyelftools

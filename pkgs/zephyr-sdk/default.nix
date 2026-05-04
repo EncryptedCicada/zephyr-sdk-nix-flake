@@ -5,7 +5,6 @@
   stdenvNoCC,
   fetchurl,
   bash,
-  python3,
   which,
   autoPatchelfHook,
   ncurses,
@@ -99,7 +98,7 @@ stdenvNoCC.mkDerivation {
 
   nativeBuildInputs = [
     bash
-    python3
+    python312
     which
   ]
   ++ lib.optionals isLinux [
@@ -108,7 +107,6 @@ stdenvNoCC.mkDerivation {
 
   buildInputs = lib.optionals isLinux [
     ncurses
-    python312
   ];
 
   # ------------------------------------------------------------------ #
