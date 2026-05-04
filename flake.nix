@@ -19,6 +19,8 @@
       pkgsFor = forAllSystems (system: import nixpkgs { inherit system; });
     in
     {
+      nixpkgs.config.allowUnfree = true;
+
       packages = forAllSystems (system: {
         zephyr-sdk = pkgsFor.${system}.callPackage ./pkgs/zephyr-sdk { };
         default = self.packages.${system}.zephyr-sdk;
