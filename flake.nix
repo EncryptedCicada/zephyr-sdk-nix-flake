@@ -22,6 +22,7 @@
           inherit system;
           config = {
             allowUnfree = true;
+            segger-jlink.acceptLicense = true;
           };
         }
       );
