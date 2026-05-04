@@ -1,23 +1,11 @@
 {
-  description = "Zephyr SDK packaging and modules for NixOS, nix-darwin, and home-manager";
+  description = "Zephyr SDK development environment";
 
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
-
-    # home-manager — users should override this with their own input
-    home-manager = {
-      url = "github:nix-community/home-manager";
-      inputs.nixpkgs.follows = "nixpkgs";
-    };
-
-    # nix-darwin — only required for macOS users
-    darwin = {
-      url = "github:LnL7/nix-darwin";
-      inputs.nixpkgs.follows = "nixpkgs";
-    };
   };
 
-  outputs = { self, nixpkgs, home-manager, darwin, ... }:
+  outputs = { self, nixpkgs, ... }:
     let
       supportedSystems = [
         "x86_64-linux"
@@ -38,26 +26,14 @@
       });
 
       devShells = forAllSystems (system: {
-        default = import ./shells/zephyr.nix {
+        # The 'zephyr' shell allows users to override toolchains etc via overriding the sdk package
+        zephyr = import ./shells/zephyr.nix {
           pkgs      = pkgsFor.${system};
           zephyrSdk = self.packages.${system}.zephyr-sdk;
         };
+
+        default = self.devShells.${system}.zephyr;
       });
-
-      nixosModules = {
-        zephyr-sdk = import ./modules/nixos.nix { inherit self; };
-        default    = self.nixosModules.zephyr-sdk;
-      };
-
-      homeManagerModules = {
-        zephyr-sdk = import ./modules/home-manager.nix { inherit self; };
-        default    = self.homeManagerModules.zephyr-sdk;
-      };
-
-      darwinModules = {
-        zephyr-sdk = import ./modules/darwin.nix { inherit self; };
-        default    = self.darwinModules.zephyr-sdk;
-      };
 
       formatter = forAllSystems (system: pkgsFor.${system}.nixfmt);
     };

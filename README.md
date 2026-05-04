@@ -1,140 +1,24 @@
-# Nix flake for zephyr-sdk
+# Zephyr SDK Flake
 
-A Nix flake that packages the [Zephyr SDK](https://docs.zephyrproject.org/latest/develop/toolchains/zephyr_sdk.html) and exposes it as a declarative module for **NixOS**, **home-manager**, and **nix-darwin**.
+A Nix flake for [Zephyr SDK](https://docs.zephyrproject.org/latest/develop/toolchains/zephyr_sdk.html).
 
-> [!IMPORTANT]
-> **Status:** Beta.
+This flake provides a development environment with the Zephyr SDK and all required host tools.
 
----
+## Usage
 
-## Supported platforms
+### 1. Direct use
 
-| Nix system         | Zephyr SDK tarball            |
-|--------------------|-------------------------------|
-| `x86_64-linux`     | `zephyr-sdk-*_linux-x86_64`   |
-| `aarch64-linux`    | `zephyr-sdk-*_linux-aarch64`  |
-| `aarch64-darwin`   | `zephyr-sdk-*_macos-aarch64`  |
+Enter a shell with the default minimal SDK:
 
----
-
-## Quickstart
-
-### 1. NixOS (`nixosConfigurations`)
-
-```nix
-# flake.nix
-{
-  inputs = {
-    nixpkgs.url    = "github:NixOS/nixpkgs/nixos-unstable";
-    zephyr-nix.url = "github:EncryptedCicada/zephyr-sdk-nix-flake";
-  };
-
-  outputs = { nixpkgs, zephyr-nix, ... }: {
-    nixosConfigurations.myHost = nixpkgs.lib.nixosSystem {
-      system  = "x86_64-linux";
-      modules = [
-        zephyr-nix.nixosModules.default
-        {
-          programs.zephyr-sdk = {
-            enable = true;
-            toolchain.gnu.enable     = true;
-            toolchain.gnu.toolchains = [ "arm-zephyr-eabi" "riscv64-zephyr-elf" ];
-            # toolchain.llvm.enable = true;
-          };
-        }
-        ./configuration.nix
-      ];
-    };
-  };
-}
+```bash
+nix develop github:EncryptedCicada/zephyr-sdk-nix-flake
 ```
 
-### 2. home-manager (standalone)
+### 2. Integration in your project
+
+Create a `flake.nix` in your Zephyr project:
 
 ```nix
-# flake.nix
-{
-  inputs = {
-    nixpkgs.url      = "github:NixOS/nixpkgs/nixos-unstable";
-    home-manager.url = "github:nix-community/home-manager";
-    zephyr-nix.url   = "github:EncryptedCicada/zephyr-sdk-nix-flake";
-  };
-
-  outputs = { home-manager, zephyr-nix, nixpkgs, ... }: {
-    homeConfigurations."alice@myHost" = home-manager.lib.homeManagerConfiguration {
-      pkgs    = nixpkgs.legacyPackages.x86_64-linux;
-      modules = [
-        zephyr-nix.homeManagerModules.default
-        {
-          programs.zephyr-sdk = {
-            enable = true;
-            toolchain.gnu.enable     = true;
-            toolchain.gnu.toolchains = [ "arm-zephyr-eabi" ];
-          };
-        }
-      ];
-    };
-  };
-}
-```
-
-It can also be embedded in a NixOS or darwin config that uses the home-manager NixOS/Darwin module:
-
-```nix
-home-manager.users.alice = {
-  imports = [ zephyr-nix.homeManagerModules.default ];
-  programs.zephyr-sdk = {
-    enable = true;
-    toolchain.gnu.enable     = true;
-    toolchain.gnu.toolchains = [ "arm-zephyr-eabi" ];
-  };
-};
-```
-
-> [!WARNING]
-> The home-manager module cannot install udev rules because it
-> runs without root privileges.  Without these rules, flashing a board
-> requires `sudo`. See [how to work around this.](#udev-rules-and-standalone-home-manager)
-
-### 3. nix-darwin (`darwinConfigurations`)
-
-```nix
-# flake.nix
-{
-  inputs = {
-    nixpkgs.url    = "github:NixOS/nixpkgs/nixos-unstable";
-    darwin.url     = "github:LnL7/nix-darwin";
-    zephyr-nix.url = "github:EncryptedCicada/zephyr-sdk-nix-flake";
-  };
-
-  outputs = { darwin, zephyr-nix, ... }: {
-    darwinConfigurations.myMac = darwin.lib.darwinSystem {
-      system  = "aarch64-darwin";
-      modules = [
-        zephyr-nix.darwinModules.default
-        {
-          programs.zephyr-sdk = {
-            enable = true;
-            toolchain.gnu.enable     = true;
-            toolchain.gnu.toolchains = [ "arm-zephyr-eabi" ];
-            # toolchain.llvm.enable = true;  # macOS users may prefer Clang
-          };
-        }
-        ./darwin-configuration.nix
-      ];
-    };
-  };
-}
-```
-
-### 4. Dev shell
-
-The flake exposes a `devShells.default` containing west, CMake, Ninja, DTC, and other host-side Zephyr dependencies. `ZEPHYR_SDK_INSTALL_DIR` and `ZEPHYR_TOOLCHAIN_VARIANT` are set automatically via the SDK's setup hook when you enter the shell.
-
-Declare it in your project's `flake.nix`:
-
-```nix
-# flake.nix
 {
   inputs = {
     nixpkgs.url    = "github:NixOS/nixpkgs/nixos-unstable";
@@ -143,63 +27,28 @@ Declare it in your project's `flake.nix`:
 
   outputs = { self, nixpkgs, zephyr-nix, ... }:
     let
-      zephyr-systems = [
-        "x86_64-linux"
-        "aarch64-linux"
-        "aarch64-darwin"
-      ];
+      system = "x86_64-linux";
+      pkgs   = nixpkgs.legacyPackages.${system};
     in
     {
-      devShells = builtins.listToAttrs (
-        map (system: {
-          name  = system;
-          value = {
-            zephyr = zephyr-nix.devShells.${system}.default;
-          };
-        }) zephyr-systems
-      );
+      devShells.${system}.default = zephyr-nix.devShells.${system}.zephyr.override {
+        zephyrSdk = zephyr-nix.packages.${system}.zephyr-sdk.override {
+          gnuToolchains = [ "arm-zephyr-eabi" "xtensa-espressif_esp32s3_zephyr-elf" ];
+        };
+      };
     };
 }
 ```
 
-Then enter with:
+Then enter the shell:
 
 ```bash
-nix develop .#zephyr
+nix develop
 ```
 
----
+## Features
 
-## Module options
-
-All three modules expose the same option namespace: `programs.zephyr-sdk.*`
-
-| Option                        | Type              | Default               | Description                                                                    |
-|-------------------------------|-------------------|-----------------------|--------------------------------------------------------------------------------|
-| `enable`                      | `bool`            | `false`               | Install and configure the SDK                                                  |
-| `package`                     | `package\|null`   | `null` (derived)      | Supply a fully custom SDK derivation, bypassing `toolchain.*` options          |
-| `toolchain.gnu.enable`        | `bool`            | `false`               | Whether to include GNU cross-compilation toolchains                            |
-| `toolchain.gnu.toolchains`    | `[string]\|"all"` | `[]`                  | GNU toolchain targets to fetch and install (only when `toolchain.gnu.enable`)  |
-| `toolchain.llvm.enable`       | `bool`            | `false`               | Whether to include the LLVM toolchain bundle                                   |
-| `enableShellIntegration`      | `bool`            | `true`                | Export `ZEPHYR_SDK_INSTALL_DIR` and `ZEPHYR_TOOLCHAIN_VARIANT`                 |
-| `extraEnv`                    | `attrs`           | `{}`                  | Additional environment variables (e.g. `ZEPHYR_BASE`)                          |
-| `udev.enable` *(NixOS only)*  | `bool`            | `true`                | Install udev rules for debug probes via `services.udev.packages`               |
-
-> [!NOTE]
-> `ZEPHYR_TOOLCHAIN_VARIANT` is always set to `"zephyr"` - it is a
-> property of the SDK itself, not a user-configurable option.  The toolchain
-> *selection* (which targets to install) is handled by `toolchain.gnu.toolchains`
-> and `toolchain.llvm.enable` at Nix evaluation time.
-
-### udev rules and standalone home-manager
-
-- **If you use home-manager embedded inside a NixOS configuration** (via `home-manager.users.<name>`), add the NixOS module alongside it and set `programs.zephyr-sdk.udev.enable = true` (the default) in the NixOS config.
-
-- **If you use standalone home-manager on Linux**, use sudo or install the rules manually with your system configuration (not recommended). You can find the rules in sdk hosttools.
-
----
-
-## Roadmap
-
-- [x] Add a `devShell` output with west + dependencies pre-configured
-- [ ] CI with GitHub Actions across all three supported systems
+- **Single Shell**: The `zephyr` devShell includes all host dependencies (`cmake`, `ninja`, `west`, etc.).
+- **Overridable**: Easily customize which GNU toolchains are included in the SDK.
+- **Flattened SDK**: The SDK installs directly into `$out` for reliable discovery.
+- **Python 3.12 support**: Correctly patched GDB dependencies for NixOS.
