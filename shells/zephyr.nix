@@ -26,6 +26,8 @@ pkgs.mkShell {
         west
         pyelftools
         jsonschema
+        pyusb
+        psutil
       ]
     ))
 
