@@ -21,14 +21,14 @@
     in
     {
       packages = forAllSystems (system: {
-        zephyr-sdk = pkgsFor.${system}.callPackage ./pkgs/zephyr-sdk { };
-        default    = self.packages.${system}.zephyr-sdk;
+        zephyr-sdk     = pkgsFor.${system}.callPackage ./pkgs/zephyr-sdk { };
+        zephyr-sdk-all = self.packages.${system}.zephyr-sdk.override { gnuToolchains = "all"; };
+        default        = self.packages.${system}.zephyr-sdk;
       });
 
       devShells = forAllSystems (system: {
         # The 'zephyr' shell allows users to override toolchains etc via overriding the sdk package
-        zephyr = import ./shells/zephyr.nix {
-          pkgs      = pkgsFor.${system};
+        zephyr = pkgsFor.${system}.callPackage ./shells/zephyr.nix {
           zephyrSdk = self.packages.${system}.zephyr-sdk;
         };
 
